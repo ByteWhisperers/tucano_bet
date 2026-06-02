@@ -24,6 +24,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
     // Sanitiza e valida os dados de entrada
     $data = array(
+        "senha_atual" => trim(filter_input(INPUT_POST, "senha_atual", FILTER_UNSAFE_RAW)),
         "senha" => trim(filter_input(INPUT_POST, "senha", FILTER_UNSAFE_RAW)),
         "confirmasenha" => trim(filter_input(INPUT_POST, "confirmasenha", FILTER_UNSAFE_RAW))
     );
@@ -31,6 +32,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     // Validações
     if (!valida_token_csrf('senha')) {
         $errors[] = "Falha. Por favor, tente novamente.";
+    } else if (empty($data["senha_atual"])) {
+        $errors[] = "O campo senha atual é obrigatório!";
     } else if (empty($data["senha"])) {
         $errors[] = "O campo senha é obrigatório!";
     } else if (strlen($data["senha"]) < 8) {
@@ -48,28 +51,47 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         );
     } else {
         try {
-            // Prepara a consulta de atualização
-            $sql = "UPDATE bet_usuarios SET bet_senha = :senha WHERE id = :usuario_id";
-            $stmt = $pdo->prepare($sql);
-
             $usuario_id = $_SESSION['usuario_id'];
-            $hashed_password = password_hash($data["senha"], PASSWORD_DEFAULT);
 
-            // Bind dos parâmetros
-            $stmt->bindParam(':senha', $hashed_password);
+            // Buscar senha atual do usuário
+            $stmt = $pdo->prepare("SELECT bet_senha FROM bet_usuarios WHERE id = :usuario_id");
             $stmt->bindParam(':usuario_id', $usuario_id);
-
-            // Executa a atualização
             $stmt->execute();
+            $usuario = $stmt->fetch(PDO::FETCH_ASSOC);
 
-            $successMessage = "Senha atualizada com sucesso!";
-            $response = array(
-                "status" => "alertasim",
-                "message" => "<p class='alertasim'>{$successMessage} <span><i class='fas fa-check'></i></span></p>"
-            );
+            if (!$usuario) {
+                throw new Exception("Usuário não encontrado.");
+            }
 
-            // Regenera o token CSRF após um envio bem-sucedido
-            $_SESSION['csrf_token_senha'] = bin2hex(random_bytes(32));
+            // Verificar se a senha atual está correta
+            if (!password_verify($data["senha_atual"], $usuario['bet_senha'])) {
+                $response = array(
+                    "status" => "alertanao",
+                    "message" => "<p class='alertanao'>Senha atual incorreta! <span><i class='fas fa-times'></i></span></p>"
+                );
+            } else {
+                // Prepara a consulta de atualização
+                $sql = "UPDATE bet_usuarios SET bet_senha = :senha WHERE id = :usuario_id";
+                $stmt = $pdo->prepare($sql);
+
+                $hashed_password = password_hash($data["senha"], PASSWORD_DEFAULT);
+
+                // Bind dos parâmetros
+                $stmt->bindParam(':senha', $hashed_password);
+                $stmt->bindParam(':usuario_id', $usuario_id);
+
+                // Executa a atualização
+                $stmt->execute();
+
+                $successMessage = "Senha atualizada com sucesso!";
+                $response = array(
+                    "status" => "alertasim",
+                    "message" => "<p class='alertasim'>{$successMessage} <span><i class='fas fa-check'></i></span></p>"
+                );
+
+                // Regenera o token CSRF após um envio bem-sucedido
+                $_SESSION['csrf_token_senha'] = bin2hex(random_bytes(32));
+            }
         } catch (PDOException $e) {
             $response = array(
                 "status" => "alertanao",

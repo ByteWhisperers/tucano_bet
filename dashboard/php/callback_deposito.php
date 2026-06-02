@@ -61,6 +61,10 @@ if ($status === 'Aprovado') {
             $updateTransacao = $pdo->prepare("UPDATE bet_transacoes SET bet_status = 'Aprovado' WHERE bet_id_transacao = :id_transacao");
             $updateTransacao->execute([':id_transacao' => $id_transacao]);
 
+            // Sistema de Afiliação Gamificado (Baús)
+            require_once '../../includes/funcoes_afiliado.php';
+            processarProgressoBausAposDeposito($pdo, (int)$usuario_id);
+
 // Caso esteja usando ads do facebook
 if (!empty($transacao['bet_origem']) && $transacao['bet_origem'] === 'facebook' && !empty($FacePixel) && !empty($FaceToken)) {
     $ipUsuario = $transacao['bet_ip'];

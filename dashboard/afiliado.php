@@ -3,6 +3,10 @@ if (!defined('IN_INDEX')) {
     header("Location: /dashboard/");
     exit();
 }
+
+// Inicializar baús do usuário
+require_once '../includes/funcoes_afiliado.php';
+inicializarBausUsuario($pdo, $_SESSION['usuario_id']);
 ?>
 
 <div class="container-conteudo">
@@ -88,6 +92,56 @@ if ($indicados && count($indicados) > 0) {
     $transacoes = $stmtTrans->fetchAll(PDO::FETCH_ASSOC);
 }
 ?>
+
+<!-- Seção de Baús de Indicação -->
+<div class="baus-section">
+  <h3 class="baus-titulo">Baús de Indicação</h3>
+  
+  <?php
+  // Buscar baús do usuário
+  $stmtBaus = $pdo->prepare("SELECT * FROM bet_afiliados_baus WHERE usuario_id = ? ORDER BY nivel ASC");
+  $stmtBaus->execute([$_SESSION['usuario_id']]);
+  $baus = $stmtBaus->fetchAll(PDO::FETCH_ASSOC);
+  
+  // Contar indicados válidos
+  $totalIndicados = contarIndicadosValidos($pdo, $_SESSION['usuario_id']);
+  ?>
+  
+  <div class="baus-grid">
+    <?php foreach ($baus as $bau): ?>
+      <div class="bau-card bau-<?= $bau['status'] ?>">
+        <div class="bau-header">
+          <span class="bau-nivel">Nível <?= $bau['nivel'] ?></span>
+          <span class="bau-status-badge"><?= ucfirst($bau['status']) ?></span>
+        </div>
+        
+        <div class="bau-body">
+          <div class="bau-progress">
+            <div class="progress-text"><?= $totalIndicados ?> / <?= $bau['pessoas_necessarias'] ?> pessoas</div>
+            <div class="progress-bar">
+              <div class="progress-fill" style="width: <?= min(100, ($totalIndicados / $bau['pessoas_necessarias']) * 100) ?>%"></div>
+            </div>
+          </div>
+          
+          <div class="bau-reward">
+            <span class="reward-label">Recompensa:</span>
+            <span class="reward-value">R$ <?= number_format($bau['valor_recompensa'], 2, ',', '.') ?></span>
+          </div>
+        </div>
+        
+        <div class="bau-footer">
+          <?php if ($bau['status'] === 'disponivel'): ?>
+            <button class="btn-abrir-bau" data-bau-id="<?= $bau['id'] ?>">Abrir Baú</button>
+          <?php elseif ($bau['status'] === 'resgatado'): ?>
+            <span class="bau-resgatado">Resgatado em <?= date('d/m/Y', strtotime($bau['data_resgate'])) ?></span>
+          <?php else: ?>
+            <span class="bau-bloqueado">Bloqueado</span>
+          <?php endif; ?>
+        </div>
+      </div>
+    <?php endforeach; ?>
+  </div>
+</div>
 
 <div class="afiliado-table-container">
   <table class="afiliado-table">

@@ -24,16 +24,25 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
     // Sanitiza e valida os dados de entrada para evitar ataques como XSS
     $data = array(
-        "email"    => filter_input(INPUT_POST, "emaildados", FILTER_SANITIZE_EMAIL)
+        "email"    => filter_input(INPUT_POST, "emaildados", FILTER_SANITIZE_EMAIL),
+        "celular"  => filter_input(INPUT_POST, "celulardados", FILTER_SANITIZE_STRING)
     );
 
     // Validações
     if (!valida_token_csrf('dados')) {
-    $errors[] = "Falha. Por favor, tente novamente.";
+        $errors[] = "Falha. Por favor, tente novamente.";
     } else if (empty($data["email"])) {
-    $errors[] = "O campo email é obrigatório!";
+        $errors[] = "O campo email é obrigatório!";
     } else if (!filter_var($data["email"], FILTER_VALIDATE_EMAIL)) {
-    $errors[] = "Email inválido!";
+        $errors[] = "Email inválido!";
+    }
+
+    // Validar celular se fornecido
+    if (!empty($data["celular"])) {
+        $celular_limpo = preg_replace('/\D/', '', $data["celular"]);
+        if (strlen($celular_limpo) < 10 || strlen($celular_limpo) > 11) {
+            $errors[] = "Celular inválido! Use formato (XX)XXXXX-XXXX ou (XX)XXXX-XXXX";
+        }
     }
 
     if (!empty($errors)) {
@@ -59,16 +68,17 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                     "status" => "alertanao",
                     "message" => "<p class='alertanao'>Este e-mail já está em uso! <span><i class='fas fa-times'></i></span></p>"
                 );
-            }else {
-                // Atualiza o e-mail
-                $stmt = $pdo->prepare("UPDATE bet_usuarios SET bet_email = :email WHERE id = :usuario_id");
+            } else {
+                // Atualiza o e-mail e celular
+                $stmt = $pdo->prepare("UPDATE bet_usuarios SET bet_email = :email, bet_celular = :celular WHERE id = :usuario_id");
                 $stmt->bindParam(':email', $data["email"]);
+                $stmt->bindParam(':celular', $data["celular"]);
                 $stmt->bindParam(':usuario_id', $usuario_id);
                 $stmt->execute();
 
                 $response = array(
                     "status" => "alertasim",
-                    "message" => "<p class='alertasim'>Dados atualizado com sucesso! <span><i class='fas fa-check'></i></span></p>"
+                    "message" => "<p class='alertasim'>Dados atualizados com sucesso! <span><i class='fas fa-check'></i></span></p>"
                 );
 
                 // Regenera o token CSRF após um envio bem-sucedido
@@ -88,3 +98,4 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     echo json_encode($response);
     exit;
 }
+?>

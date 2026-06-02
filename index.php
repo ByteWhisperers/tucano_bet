@@ -94,6 +94,7 @@ src="https://www.facebook.com/tr?id=<?php echo $FacePixel; ?>&ev=PageView&noscri
 <!-- End Meta Pixel Code -->
 
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link rel="stylesheet" href="css/tropical_core.css">
     <link rel="stylesheet" href="css/estilos.php">
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.mask/1.14.16/jquery.mask.min.js"></script>

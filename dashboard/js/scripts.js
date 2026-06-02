@@ -688,3 +688,87 @@ function verificarRaspagem() {
 
 
 });	
+
+
+// Sistema de Afiliação Gamificado - Baús
+document.addEventListener('DOMContentLoaded', function() {
+    // Handler para botões de abrir baú
+    const botoesBaus = document.querySelectorAll('.btn-abrir-bau');
+    
+    botoesBaus.forEach(botao => {
+        botao.addEventListener('click', function(e) {
+            e.preventDefault();
+            const bauId = this.getAttribute('data-bau-id');
+            resgatarBau(bauId);
+        });
+    });
+});
+
+function resgatarBau(bauId) {
+    const csrfToken = document.querySelector('input[name="csrf_token_resgatar_bau"]');
+    if (!csrfToken) {
+        console.error('CSRF token não encontrado');
+        return;
+    }
+
+    const formData = new FormData();
+    formData.append('bau_id', bauId);
+    formData.append('csrf_token', csrfToken.value);
+
+    fetch('php/resgatar_bau.php', {
+        method: 'POST',
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest'
+        },
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'alertasim') {
+            // Mostrar alerta de sucesso
+            showAlert(data.message, 'success');
+            
+            // Atualizar saldo no header
+            const saldoElement = document.querySelector('[data-saldo]');
+            if (saldoElement) {
+                saldoElement.textContent = 'R$ ' + data.novo_saldo;
+            }
+            
+            // Recarregar a página após 2 segundos
+            setTimeout(() => {
+                location.reload();
+            }, 2000);
+        } else {
+            showAlert(data.message, 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Erro:', error);
+        showAlert('Ocorreu um erro ao resgatar o baú. Tente novamente.', 'error');
+    });
+}
+
+function showAlert(message, type) {
+    // Criar elemento de alerta
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert alert-${type}`;
+    alertDiv.textContent = message;
+    alertDiv.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        padding: 15px 20px;
+        background-color: ${type === 'success' ? '#4CAF50' : '#f44336'};
+        color: white;
+        border-radius: 4px;
+        z-index: 9999;
+        animation: slideIn 0.3s ease-in-out;
+    `;
+    
+    document.body.appendChild(alertDiv);
+    
+    // Remover após 5 segundos
+    setTimeout(() => {
+        alertDiv.remove();
+    }, 5000);
+}

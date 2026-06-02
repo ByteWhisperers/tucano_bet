@@ -20,6 +20,7 @@ if ($_SERVER["REQUEST_METHOD"] == "GET") {
     $token_afiliados = gerar_token_csrf('afiliados');
     $token_bonus = gerar_token_csrf('bonus');
     $token_raspadinha = gerar_token_csrf('raspadinha');
+    $token_resgatar_bau = gerar_token_csrf('resgatar_bau');
 }
 
 define('IN_INDEX', true);
@@ -49,7 +50,7 @@ if (!isset($_SESSION['usuario_id'])) {
     exit;
 } else {
     // Puxar os dados do usuário logado
-    $stmt = $pdo->prepare("SELECT bet_nome, bet_email, bet_cpf, bet_saldo, bet_afiliado_por FROM bet_usuarios WHERE id = ?");
+    $stmt = $pdo->prepare("SELECT bet_nome, bet_email, bet_cpf, bet_saldo, bet_afiliado_por, bet_celular FROM bet_usuarios WHERE id = ?");
     $stmt->execute([$_SESSION['usuario_id']]);
     $usuario = $stmt->fetch(PDO::FETCH_ASSOC);
 
@@ -59,6 +60,7 @@ if (!isset($_SESSION['usuario_id'])) {
         $cpf   = $usuario['bet_cpf'];
         $saldo = $usuario['bet_saldo'];
         $porcentagem = $usuario['bet_afiliado_por'];
+        $celular = $usuario['bet_celular'];
     }
 
     // Puxar o TOTAL de bônus pendentes
@@ -111,6 +113,7 @@ if ($bonus_raspadinha == 0 && $ChaveBonusRaspadinha == 1) {
     <link rel="icon" type="image/png" href="../imagens/<?= $Favicon ?>">
 
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link rel="stylesheet" href="../css/tropical_core.css">
     <link rel="stylesheet" href="css/estilos.php">
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script>const usuarioTemBonus = <?= $mostrar_raspadinha ? 'true' : 'false' ?>;</script>
@@ -128,9 +131,8 @@ if ($bonus_raspadinha == 0 && $ChaveBonusRaspadinha == 1) {
 <div id="mySidebar" class="sidebar">
     <span class="close-btn" onclick="closeMenu()">×</span>
     <a href="/dashboard/"><i class="fas fa-gamepad"></i> Jogos</a>
-    <a href="/dashboard/?pagina=extrato"><i class="fas fa-file-invoice-dollar"></i> Extrato</a>
-    <a class="btn-dados"><i class="fas fa-sync-alt"></i> Atualizar dados</a>
-    <a class="btn-senha"><i class="fas fa-user-lock"></i> Atualizar senha</a>
+    <a href="/dashboard/?pagina=perfil&aba=historico"><i class="fas fa-file-invoice-dollar"></i> Extrato</a>
+    <a href="/dashboard/?pagina=perfil"><i class="fas fa-user"></i> Perfil</a>
     <a href="/dashboard/?pagina=afiliado"><i class="fas fa-users"></i> Afiliado</a>
     <a href="php/logout.php"><i class="fas fa-sign-out-alt"></i> Sair</a>
 </div>
@@ -331,6 +333,8 @@ if ($bonus_raspadinha == 0 && $ChaveBonusRaspadinha == 1) {
     </div>
 </div>
 
+<input type="hidden" name="csrf_token_resgatar_bau" value="<?= $token_resgatar_bau ?>">
+
 <!-- Conteúdo dos modais FIM -->
 
 <!-- Container topo -->      
@@ -346,172 +350,65 @@ if ($bonus_raspadinha == 0 && $ChaveBonusRaspadinha == 1) {
             <!-- Novo bloco para saldo e botão retirar -->
             <div class="saldo-retirar">
                 <div class="saldo-titulo">Saldo</div>
-                <div class="saldo">R$ <?php echo number_format($saldo, 2, ',', ''); ?></div>
+                <div class="saldo" data-saldo>R$ <?php echo number_format($saldo, 2, ',', ''); ?></div>
                 <button class="button btnRetirar modalRetirada">Retirar</button>
             </div>
 
             <!-- Novo bloco para bônus -->
             <div class="bonus-resgatar">
                 <div class="bonus-titulo">Bônus</div>
-                <div class="bonus-valor">R$ <?php echo number_format($saldo_bonus ?? 0, 2, ',', ''); ?></div>
-                <button class="button btnResgatar modalBonus">Resgatar</button>
+                <div class="bonus">R$ <?php echo number_format($saldo_bonus, 2, ',', ''); ?></div>
+                <button class="button btnBonus modalBonus">Resgatar</button>
             </div>
-
         </div>
     </div>
 </div>
+<!-- Container topo FIM -->
 
-<!-- Botão Esporte --> 
-<?php if ($bet_esporte === 1): ?>
-    <div class="botao-esporte">
-        <?php include 'funcoes/esportes.php'; ?>
-    </div>
-<?php endif; ?>
-
-<!-- Container slider -->  
-<div class="slider-wrapper">
-  <div class="slider-container">
-    <div class="slides" id="slides">
-      <div class="slide"><img src="../imagens/<?= $slider1 ?>"></div>
-      <div class="slide"><img src="../imagens/<?= $slider2 ?>"></div>
-      <div class="slide"><img src="../imagens/<?= $slider3 ?>"></div>
-    </div>
-  </div>
-
-  <div class="dots" id="dots">
-    <span class="dot active" data-index="0"></span>
-    <span class="dot" data-index="1"></span>
-    <span class="dot" data-index="2"></span>
-  </div>
-</div>
-
-<!-- carrossel-ganhadores -->
-<div class="ganhos-container">
-  <div class="ganhos-fixo">
-    <i class="fas fa-trophy"></i>
-    <span>MAIORES<br>GANHOS<br>DE HOJE</span>
-  </div>
-  <div class="ganhos-rolando">
-    <div class="ganhos-slider" id="ganhos-slider">
-      <?php include 'funcoes/carrossel-ganhadores.php'; ?>
-    </div>
-  </div>
-</div>
-
-<!-- Container busca --> 
-    <div class="busca-container">
-    <form id="form-busca" onsubmit="return false;">
-  <div class="busca-input-icon">
-      <i class="fas fa-search"></i>
-      <input type="text" id="input-busca" name="busca" placeholder="Buscar jogo..." class="busca-input" autocomplete="off">
-  </div>
-</form>
-    <div id="resultado-busca" class="busca-resultado"></div>
-</div>
-
-<div class="content-box">
-    <?php 
-            $pagina = $_GET["pagina"] ?? null;
-
+<!-- Conteúdo Principal -->
+<div class="main-content">
+    <?php
+    $pagina = isset($_GET['pagina']) ? $_GET['pagina'] : 'dashboard';
+    
     switch ($pagina) {
+        case 'dashboard':
+            include 'dashboard.php';
+            break;
         case 'extrato':
-            include "extrato.php";
+            // Redirecionar extrato para perfil com aba historico
+            include 'perfil.php';
             break;
-
         case 'afiliado':
-            include "afiliado.php";
+            include 'afiliado.php';
             break;
-
+        case 'perfil':
+            include 'perfil.php';
+            break;
         default:
-            include "dashboard.php";
+            include 'dashboard.php';
             break;
     }
-           ?>
+    ?>
 </div>
 
-<!-- Resultados ao Vivo -->
-<div class="aovivo-resultados">
-  <span class="aovivo-titulo">
-  <span class="online-dot-red"></span> Resultados ao Vivo
-</span>
-  <div class="aovivo-resultado-container" id="aovivo-container"></div>
-  <?php include 'funcoes/aovivo.php'; ?>
-</div>
-
-<!-- Modal Único -->
-<div id="modal" class="modal-slots">
-    <div class="modal-slots-content">
-        <button class="close-slots-modal" onclick="closeGameModal()"><i class="fas fa-times"></i></button>
-        <iframe id="iframe" width="100%" height="100%" frameborder="0"></iframe>
-    </div>
-</div>
-
-<!-- Container footer -->
- <div class="footer">
-    <div class="container-footer">
-        <div class="footer-column">
-            <img src="../imagens/<?= $Logo ?>">
+<!-- Rodapé -->
+<footer class="footer">
+    <div class="container">
+        <div class="footer-links">
+            <a href="#" id="termo-condicao">Termos e Condições</a>
+            <a href="#" id="termo-privacidade">Política de Privacidade</a>
+            <a href="#" id="termo-cookies">Política de Cookies</a>
+            <a href="#" id="termo-18anos">Aviso 18+</a>
+            <a href="#" id="termo-jogo-responsavel">Jogo Responsável</a>
+            <a class="modalContato">Suporte</a>
         </div>
-
-        <div class="footer-column">
-            <h4>Sobre Nós</h4>
-            <ul>
-                <li><a id="termo-condicao">Termos e condições</a></li>
-                <li><a id="termo-privacidade">Privacidade</a></li>
-                <li><a id="termo-cookies">Política de cookies</a></li>
-                <li><a id="termo-18anos">18 anos ou mais</a></li>
-                <li><a id="termo-jogo-responsavel">Jogo Responsável</a></li>
-            </ul>
+        <div class="footer-social">
+            <?php if (!empty($Instagram)): ?><a href="<?= $Instagram ?>" target="_blank"><i class="fab fa-instagram"></i></a><?php endif; ?>
+            <?php if (!empty($Telegram)): ?><a href="<?= $Telegram ?>" target="_blank"><i class="fab fa-telegram"></i></a><?php endif; ?>
         </div>
-        <div class="footer-column">
-            <h4>Contato</h4>
-            <ul> 
-                <li><a class="modalContato">Fale Conosco</a></li>
-            </ul>
-        </div>
-        <div class="footer-column">
-            <h4>Pagamento</h4>
-            <img class="pix-logo" src="../imagens/logopix.png">
-        </div>
-        <div class="footer-column">
-    <h4>Siga-nos</h4>
-    <div class="social-icons">
-        <a href="<?= $Instagram ?>" target="_blank"><i class="fab fa-instagram"></i></a>
-        <a href="<?= $Telegram ?>" target="_blank"><i class="fab fa-telegram-plane"></i></a>
+        <p>&copy; <?= date('Y') ?> <?= $NomeSite ?>. Todos os direitos reservados.</p>
     </div>
-</div>
-    </div>
+</footer>
 
-    <div class="footer-line"></div>
-
-    <div class="footer-text" id="footerText">
-        Jogue com responsabilidade, Apostar pode ser viciante! O jogo pode ser prejudicial se não for controlado e feito com responsabilidade. Por isso, leia todas as informações disponíveis na nossa seção de Jogo Responsável. O acesso de pessoas menores de 18 anos é estritamente proibido.<br><br>
-        <div id="extraContent" style="display: none;">
-        Nossa Plataforma não promove suas atividades para menores de 18 anos. Crianças devem sempre ter permissão dos pais antes de enviar qualquer informação pessoal (como nome, endereço de e-mail e número de telefone) pela internet, seja para qualquer pessoa ou para nós. Se você tem menos de 18 anos (ou idade inferior àquela legalmente permitida para fazer apostas em seu país de residência), solicitamos que não acesse nossa plataforma. Jogar pode ser algo viciante. Jogue com responsabilidade. Para mais informações, visite nossa página Jogos Responsáveis.<br><br>
-        Ao navegar nesse site aceite o uso de certos cookies de navegador com o objetivo de melhorar a sua experiência. Nossa plataforma apenas usa cookies que melhoram a sua experiência e não interferem em sua privacidade. Por favor acesse à nossa Política de Privacidade para mais informação em relação à forma como utilizamos cookies e como pode desativar ou gerenciar os mesmos, caso queira.
-        </div>
-        <button id="toggleButton" class="ver-mais-btn">Ver mais</button>
-    </div>
-
-    <div class="footer-line"></div>
-
-    <div class="footer-centered-img">
-        <img class="selo-img" src="../imagens/logosigap.png">
-    </div>
-
-    <div class="footer-line"></div>
-
-    <div class="footer-bottom">
-        <p>
-            <strong>Suporte</strong> suporte@<?= $Site ?>
-            <span>|</span>
-            <strong>Jurídico</strong> juridico@<?= $Site ?>
-            <span>|</span>
-            <strong>Parceiros</strong> parceiros@<?= $Site ?>
-        </p>
-        <p>© 2025 <?= $NomeSite ?>. Todos os direitos reservados.</p>
-    </div>
-</div>  
-    
 </body>
 </html>

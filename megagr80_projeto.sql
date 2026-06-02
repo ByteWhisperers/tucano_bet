@@ -6301,7 +6301,7 @@ CREATE TABLE `bet_transacoes` (
   `bet_usuario` int(11) NOT NULL,
   `bet_id_transacao` varchar(255) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',
   `bet_valor` decimal(10,2) NOT NULL DEFAULT '0.00',
-  `bet_tipo` enum('Deposito','Retirada','Bônus') COLLATE utf8_unicode_ci NOT NULL,
+  `bet_tipo` enum('Deposito','Retirada','Bônus','Bônus Afiliação') COLLATE utf8_unicode_ci NOT NULL,
   `bet_status` enum('Pendente','Aprovado','Cancelado') COLLATE utf8_unicode_ci NOT NULL DEFAULT 'Pendente',
   `bet_data` datetime NOT NULL,
   `bet_origem` varchar(100) COLLATE utf8_unicode_ci NOT NULL DEFAULT '',
@@ -6459,3 +6459,23 @@ COMMIT;
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
 /*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
+
+-- --------------------------------------------------------
+
+--
+-- Estrutura para tabela `bet_afiliados_baus`
+--
+
+CREATE TABLE `bet_afiliados_baus` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `usuario_id` int(11) NOT NULL,
+  `nivel` int(11) NOT NULL,
+  `pessoas_necessarias` int(11) NOT NULL,
+  `valor_recompensa` decimal(10,2) NOT NULL,
+  `status` enum('bloqueado','disponivel','resgatado') COLLATE utf8_unicode_ci DEFAULT 'bloqueado',
+  `data_desbloqueio` datetime DEFAULT NULL,
+  `data_resgate` datetime DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_usuario_nivel` (`usuario_id`,`nivel`),
+  KEY `idx_usuario` (`usuario_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
